@@ -1,32 +1,44 @@
 package com.api.Teste;
 
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final JwtUtil jwtUtil;
+
+    public AuthController(UserRepository userRepository, JwtUtil jwtUtil) {
+        this.userRepository = userRepository;
+        this.jwtUtil = jwtUtil;
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User loginUser) {
+    public ResponseEntity<String> login(@RequestBody LoginRequest loginRequest) {
         Optional<User> user = userRepository.findByEmailAndPassword(
-            loginUser.getEmail(), loginUser.getPassword()
-        );
+                loginRequest.getEmail(), loginRequest.getPassword());
 
         if (user.isPresent()) {
-            return ResponseEntity.ok("Login bem-sucedido");
+            String token = jwtUtil.generateToken(user.get().getEmail());
+            return ResponseEntity.ok(token);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciais inválidas");
+            return ResponseEntity.status(401).body("Credenciais inválidas");
+        }
+    }
+
+    // Exemplo de rota protegida
+    @GetMapping("/protected")
+    public ResponseEntity<String> protectedEndpoint(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        if (jwtUtil.isTokenValid(token)) {
+            String email = jwtUtil.extractEmail(token);
+            return ResponseEntity.ok("Olá, " + email + "! Você acessou uma rota protegida.");
+        } else {
+            return ResponseEntity.status(403).body("Token inválido");
         }
     }
 }
