@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*") // Para permitir chamadas do Netlify
+@CrossOrigin(origins = "https://ornate-paprenjak-59e320.netlify.app/")
 public class AuthController {
 
     @Autowired
